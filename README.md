@@ -2,12 +2,6 @@
 
 A simple, clean task manager for Android, built with Kotlin and Jetpack Compose. Tasks are stored locally with Room, so they persist across app restarts.
 
-<!-- Add screenshots after pushing: create a /screenshots folder and replace the paths below -->
-<p align="center">
-  <img src="screenshots/home.png" width="250" alt="Home screen" />
-  <img src="screenshots/add_task.png" width="250" alt="Add task" />
-</p>
-
 ## Features
 
 - Add, edit and delete tasks
