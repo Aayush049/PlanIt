@@ -8,6 +8,8 @@ import com.aayush.planit.data.room_database.TaskItem
 import com.aayush.planit.repository.TaskRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -21,19 +23,24 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     // Repository acts as the middle layer between the ViewModel and DAO.
     private val repository = TaskRepository(dao)
 
-    // Converts the database Flow into a StateFlow that the UI can observe.
-    // The UI always has the latest list of tasks available.
-    val allTasks: StateFlow<List<TaskItem>> = repository.getAllTasks()
+    // Converts the database Flow into a StateFlow exposing a sealed TaskUiState.
+    val uiState: StateFlow<TaskUiState> = repository.getAllTasks()
+        .map<List<TaskItem>, TaskUiState> { tasks ->
+            TaskUiState.Success(tasks)
+        }
+        .catch { exception ->
+            emit(TaskUiState.Error(exception.message ?: "Failed to load tasks from local storage"))
+        }
         .stateIn(
             // Ties the StateFlow to the ViewModel's lifecycle.
-            viewModelScope,
+            scope = viewModelScope,
 
             // Keeps collecting while there are active UI subscribers.
             // Stops collection 5 seconds after the last subscriber disappears.
-            SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(5000),
 
             // Initial value before the database emits its first result.
-            emptyList()
+            initialValue = TaskUiState.Loading
         )
 
     // Adds a new task to the database.
